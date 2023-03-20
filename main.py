@@ -6,6 +6,7 @@ import traceback
 import os
 import asyncio
 from time import sleep, time
+from crypto import mnem_to_addr
 from arbirtum import Arbitrum, TOKEN_CONTRACT, CONTRACT_ADDRESS, DECIMAL, CONTRACT, web3_eth_no_sync
 from config import CHECK
 os.system('title Made by Arkptz')
@@ -20,7 +21,13 @@ with open('private_keys.txt') as file:
     data = file.read().split('\n')
     for i in data:
         if i != '':
-            wallets.append(Arbitrum(i))
+            wallets.append(Arbitrum(private_key=i))
+
+with open('seeds.txt') as file:
+    data = file.read().split('\n')
+    for i in data:
+        if i != '':
+            wallets.append(Arbitrum(seed=i))
 
 
 def check_claim():
@@ -32,6 +39,8 @@ def check_claim():
     log.info(f"Current block number: {current_block_number}")
     left_to_go = claim_period_start - current_block_number
     log.info(f"Blocks left to go: {left_to_go}")
+    while not wallets[0].address:
+        sleep(1)
     try:
         CONTRACT.functions.claim().call({'from': wallets[0].address})
         log.success('Claim Accessed!')

@@ -1,2 +1,6 @@
 web3==6.0.0
 loguru==0.6.0
+hashlib==20081119
+hmac==20101005
+ecdsa==0.18.0
+eth-utils==2.1.0

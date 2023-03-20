@@ -3,9 +3,11 @@ from web3 import Account
 from web3.eth import AsyncEth
 from loguru import logger as log
 import traceback
+import threading
 import asyncio
 from time import sleep, time
 from abi import abi, token_abi
+from crypto import mnem_to_addr
 from config import TRANSFER_ADDRESS, NODE_ARB, NODE_ETH, MAX_GWEI_PRICE, CHECK_TOKENS
 from hexbytes.main import HexBytes
 
@@ -25,7 +27,7 @@ TOKEN_CONTRACT_ADDRESS = Web3.to_checksum_address(
 CONTRACT = web3_no_sync.eth.contract(CONTRACT_ADDRESS, abi=abi)
 TOKEN_CONTRACT = web3_no_sync.eth.contract(
     TOKEN_CONTRACT_ADDRESS, abi=token_abi)
-
+chainId = web3_no_sync.eth.chain_id
 
 class Arbitrum:
     account: Account
@@ -34,7 +36,13 @@ class Arbitrum:
     amount_tokens: int
     have_tokens_to_claim = True
 
-    def __init__(self, private_key: str) -> None:
+    def __init__(self, **kwargs) -> None:
+        t = threading.Thread(target=self._thr_init, kwargs=kwargs)
+        t.start()
+
+    def _thr_init(self, private_key: str | None = None, seed: str | None = None):
+        if seed:
+            private_key = mnem_to_addr(seed)[0]
         self.account = Account.from_key(private_key=private_key)
         self.private_key = private_key
         self.address = self.account.address
@@ -45,7 +53,8 @@ class Arbitrum:
                 log.error(f'Wallet {self.address} not have tokens to claim.')
                 self.have_tokens_to_claim = False
             else:
-                log.success(f'Wallet {self.address} have {amount} ARB to claim.')
+                log.success(
+                    f'Wallet {self.address} have {amount} ARB to claim.')
 
     async def wait_tokens(self):
         while True:
@@ -64,7 +73,7 @@ class Arbitrum:
         if self.have_tokens_to_claim:
             try:
                 gas_price = await self.get_gas_price()
-                transaction = CONTRACT.functions.claim().build_transaction({'chainId': await web3.eth.chain_id,
+                transaction = CONTRACT.functions.claim().build_transaction({'chainId': chainId,
                                                                             'from': self.address,
                                                                             'gasPrice': gas_price,
                                                                             'nonce': await web3.eth.get_transaction_count(self.address),
@@ -75,7 +84,8 @@ class Arbitrum:
                 log.success(
                     f'Success claim by {self.address}, tx hash - {readable_hash}')
                 await self.wait_tx(txn_hash)
-                log.success(f'Transaction claim complete. Hash - {readable_hash}')
+                log.success(
+                    f'Transaction claim complete. Hash - {readable_hash}')
                 if TRANSFER_ADDRESS:
                     await self.wait_tokens()
                     await self.trasfer_tokens()
@@ -86,7 +96,7 @@ class Arbitrum:
         amount = self.amount_tokens
         gas_price = await self.get_gas_price()
         amount_d = amount // DECIMAL
-        transaction = TOKEN_CONTRACT.functions.transfer(TRANSFER_ADDRESS, amount).build_transaction({'chainId': await web3.eth.chain_id,
+        transaction = TOKEN_CONTRACT.functions.transfer(TRANSFER_ADDRESS, amount).build_transaction({'chainId': chainId,
                                                                                                      'from': self.address,
                                                                                                      'gasPrice': gas_price,
                                                                                                      'nonce': await web3.eth.get_transaction_count(self.address),
