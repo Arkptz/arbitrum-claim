@@ -1,5 +1,6 @@
 download python 3.10.9 - https://www.python.org/downloads/release/python-3109/ (поставить галку для установки PATH в процессе установки python)
 запустить install_modules.bat
 загрузить приватники в private_keys.txt (1 строка - 1 приватник)
+настроить конфиг config.py
 запустить launch.bat
 софт запущен и ждёт открытия клейма
