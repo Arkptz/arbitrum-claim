@@ -52,22 +52,25 @@ class Arbitrum:
         return CONTRACT.functions.claimableTokens(self.address).call() / DECIMAL
 
     async def claim(self):
-        gas_price = await self.get_gas_price()
-        transaction = CONTRACT.functions.claim().build_transaction({'chainId': await web3.eth.chain_id,
-                                                                    'from': self.address,
-                                                                    'gasPrice': gas_price,
-                                                                    'nonce': await web3.eth.get_transaction_count(self.address),
-                                                                    'gas': 1_000_000,
-                                                                    'value': 0})
-        txn_hash = await self.send_tx(transaction)
-        readable_hash = txn_hash.hex()
-        log.success(
-            f'Success claim by {self.address}, tx hash - {readable_hash}')
-        await self.wait_tx(txn_hash)
-        log.success(f'Transaction claim complete. Hash - {readable_hash}')
-        if TRANSFER_ADDRESS:
-            await self.wait_tokens()
-            await self.trasfer_tokens()
+        try:
+            gas_price = await self.get_gas_price()
+            transaction = CONTRACT.functions.claim().build_transaction({'chainId': await web3.eth.chain_id,
+                                                                        'from': self.address,
+                                                                        'gasPrice': gas_price,
+                                                                        'nonce': await web3.eth.get_transaction_count(self.address),
+                                                                        'gas': 1_000_000,
+                                                                        'value': 0})
+            txn_hash = await self.send_tx(transaction)
+            readable_hash = txn_hash.hex()
+            log.success(
+                f'Success claim by {self.address}, tx hash - {readable_hash}')
+            await self.wait_tx(txn_hash)
+            log.success(f'Transaction claim complete. Hash - {readable_hash}')
+            if TRANSFER_ADDRESS:
+                await self.wait_tokens()
+                await self.trasfer_tokens()
+        except:
+            log.error(f'Unfortunate claim by {self.address}')
 
     async def trasfer_tokens(self):
         amount = self.amount_tokens
@@ -87,11 +90,15 @@ class Arbitrum:
         log.success(f'Transaction complete. Hash - {readable_hash}')
 
     async def send_tx(self, tx: dict) -> HexBytes:
-        signed_txn = web3.eth.account.sign_transaction(
-            tx, self.private_key)
+        for i in range(3):
+            try:
+                signed_txn = web3.eth.account.sign_transaction(
+                    tx, self.private_key)
 
-        txn_hash = await web3.eth.send_raw_transaction(signed_txn.rawTransaction)
-        return txn_hash
+                txn_hash = await web3.eth.send_raw_transaction(signed_txn.rawTransaction)
+                return txn_hash
+            except:
+                log.error(f'Error when sending tx by {self.address}')
 
     async def wait_tx(self, hash: HexBytes):
         await web3.eth.wait_for_transaction_receipt(hash, timeout=300)
