@@ -41,7 +41,7 @@ class Arbitrum:
         if CHECK_TOKENS:
             amount = self.check_tokens_to_claim()
 
-            if amount < 0:
+            if amount == 0:
                 log.error(f'Wallet {self.address} not have tokens to claim.')
                 self.have_tokens_to_claim = False
             else:
