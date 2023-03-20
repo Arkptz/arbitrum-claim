@@ -6,7 +6,7 @@ import traceback
 import asyncio
 from time import sleep, time
 from abi import abi, token_abi
-from config import TRANSFER_ADDRESS, NODE_ARB, NODE_ETH, MAX_GWEI_PRICE
+from config import TRANSFER_ADDRESS, NODE_ARB, NODE_ETH, MAX_GWEI_PRICE, CHECK_TOKENS
 from hexbytes.main import HexBytes
 
 
@@ -32,11 +32,20 @@ class Arbitrum:
     private_key: str
     address: str
     amount_tokens: int
+    have_tokens_to_claim = True
 
     def __init__(self, private_key: str) -> None:
         self.account = Account.from_key(private_key=private_key)
         self.private_key = private_key
         self.address = self.account.address
+        if CHECK_TOKENS:
+            amount = self.check_tokens_to_claim()
+
+            if amount < 0:
+                log.error(f'Wallet {self.address} not have tokens to claim.')
+                self.have_tokens_to_claim = False
+            else:
+                log.success(f'Wallet {self.address} have {amount} ARB to claim.')
 
     async def wait_tokens(self):
         while True:
@@ -52,25 +61,26 @@ class Arbitrum:
         return CONTRACT.functions.claimableTokens(self.address).call() / DECIMAL
 
     async def claim(self):
-        try:
-            gas_price = await self.get_gas_price()
-            transaction = CONTRACT.functions.claim().build_transaction({'chainId': await web3.eth.chain_id,
-                                                                        'from': self.address,
-                                                                        'gasPrice': gas_price,
-                                                                        'nonce': await web3.eth.get_transaction_count(self.address),
-                                                                        'gas': 1_000_000,
-                                                                        'value': 0})
-            txn_hash = await self.send_tx(transaction)
-            readable_hash = txn_hash.hex()
-            log.success(
-                f'Success claim by {self.address}, tx hash - {readable_hash}')
-            await self.wait_tx(txn_hash)
-            log.success(f'Transaction claim complete. Hash - {readable_hash}')
-            if TRANSFER_ADDRESS:
-                await self.wait_tokens()
-                await self.trasfer_tokens()
-        except:
-            log.error(f'Unfortunate claim by {self.address}')
+        if self.have_tokens_to_claim:
+            try:
+                gas_price = await self.get_gas_price()
+                transaction = CONTRACT.functions.claim().build_transaction({'chainId': await web3.eth.chain_id,
+                                                                            'from': self.address,
+                                                                            'gasPrice': gas_price,
+                                                                            'nonce': await web3.eth.get_transaction_count(self.address),
+                                                                            'gas': 1_000_000,
+                                                                            'value': 0})
+                txn_hash = await self.send_tx(transaction)
+                readable_hash = txn_hash.hex()
+                log.success(
+                    f'Success claim by {self.address}, tx hash - {readable_hash}')
+                await self.wait_tx(txn_hash)
+                log.success(f'Transaction claim complete. Hash - {readable_hash}')
+                if TRANSFER_ADDRESS:
+                    await self.wait_tokens()
+                    await self.trasfer_tokens()
+            except:
+                log.error(f'Unfortunate claim by {self.address}')
 
     async def trasfer_tokens(self):
         amount = self.amount_tokens
