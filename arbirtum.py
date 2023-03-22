@@ -32,7 +32,7 @@ chainId = web3_no_sync.eth.chain_id
 
 adresses = asyncio.Queue()
 adresses_lst = []
-with open('trasfers.txt', 'r') as file:
+with open('transfers.txt', 'r') as file:
     for i in file.read().split('\n'):
         adresses.put_nowait(i)
         adresses_lst.append(i)
