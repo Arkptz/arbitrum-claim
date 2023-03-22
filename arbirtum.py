@@ -36,6 +36,8 @@ with open('transfers.txt', 'r') as file:
     for i in file.read().split('\n'):
         adresses.put_nowait(i)
         adresses_lst.append(i)
+
+
 class Arbitrum:
     account: Account
     private_key: str
@@ -98,7 +100,8 @@ class Arbitrum:
                     log.error(f'Unfortunate claim by {self.address}')
 
             if TRANSFER:
-                    await self.trasfer_tokens()
+                await self.trasfer_tokens()
+
     async def trasfer_tokens(self):
         await self.wait_tokens()
         amount = self.amount_tokens
@@ -109,11 +112,11 @@ class Arbitrum:
         else:
             ta = random.choice(ta)
         transaction = TOKEN_CONTRACT.functions.transfer(ta, amount).build_transaction({'chainId': chainId,
-                                                                                                     'from': self.address,
-                                                                                                     'gasPrice': gas_price,
-                                                                                                     'nonce': await web3.eth.get_transaction_count(self.address),
-                                                                                                     'gas': 1_000_000,
-                                                                                                     'value': 0})
+                                                                                       'from': self.address,
+                                                                                       'gasPrice': gas_price,
+                                                                                       'nonce': await web3.eth.get_transaction_count(self.address),
+                                                                                       'gas': 1_000_000,
+                                                                                       'value': 0})
         txn_hash = await self.send_tx(transaction)
         readable_hash = txn_hash.hex()
         log.success(
