@@ -81,6 +81,7 @@ class Arbitrum:
                 return CONTRACT.functions.claimableTokens(self.address).call() / DECIMAL
             except:
                 sleep(1)
+        return 0
 
     async def claim(self):
         if self.have_tokens_to_claim:
