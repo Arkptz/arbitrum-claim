@@ -146,7 +146,7 @@ class Arbitrum:
                 txn_hash = await web3.eth.send_raw_transaction(signed_txn.rawTransaction)
                 return txn_hash
             except:
-                await asyncio.sleep(5)
+                await asyncio.sleep(1)
                 log.error(f'Error when sending tx by {self.address}')
 
     async def wait_tx(self, hash: HexBytes, timeout:int=300):
