@@ -86,25 +86,31 @@ class Arbitrum:
         return 0
 
     async def claim(self):
+        amount = TOKEN_CONTRACT.functions.balanceOf(
+                self.address).call()
         if self.have_tokens_to_claim:
-            if CLAIM:
-                try:
-                    gas_price = await self.get_gas_price()
-                    transaction = CONTRACT.functions.claim().build_transaction({'chainId': chainId,
-                                                                                'from': self.address,
-                                                                                'gasPrice': gas_price,
-                                                                                'nonce': await web3.eth.get_transaction_count(self.address),
-                                                                                'gas': 1_000_000,
-                                                                                'value': 0})
-                    txn_hash = await self.send_tx(transaction)
-                    readable_hash = txn_hash.hex()
-                    log.success(
-                        f'Success claim by {self.address}, tx hash - {readable_hash}')
-                    await self.wait_tx(txn_hash)
-                    log.success(
-                        f'Transaction claim complete. Hash - {readable_hash}')
-                except:
-                    log.error(f'Unfortunate claim by {self.address}')
+            if not amount > 0:
+                if CLAIM:
+                    try:
+                        gas_price = await self.get_gas_price()
+                        transaction = CONTRACT.functions.claim().build_transaction({'chainId': chainId,
+                                                                                    'from': self.address,
+                                                                                    'gasPrice': gas_price,
+                                                                                    'nonce': await web3.eth.get_transaction_count(self.address),
+                                                                                    'gas': 1_000_000,
+                                                                                    'value': 0})
+                        txn_hash = await self.send_tx(transaction)
+                        readable_hash = txn_hash.hex()
+                        log.success(
+                            f'Success claim by {self.address}, tx hash - {readable_hash}')
+                        await self.wait_tx(txn_hash)
+                        log.success(
+                            f'Transaction claim complete. Hash - {readable_hash}')
+                    except:
+                        log.error(f'Unfortunate claim by {self.address}')
+            amount = TOKEN_CONTRACT.functions.balanceOf(
+                self.address).call()
+        if amount> 0:
 
             if TRANSFER:
                 await self.trasfer_tokens()
