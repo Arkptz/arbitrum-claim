@@ -123,7 +123,7 @@ class Arbitrum:
         if not RANDOM_TRANSFER:
             ta = await adresses.get()
         else:
-            ta = random.choice(ta)
+            ta = random.choice(adresses_lst)
         transaction = TOKEN_CONTRACT.functions.transfer(ta, amount).build_transaction({'chainId': chainId,
                                                                                        'from': self.address,
                                                                                        'gasPrice': gas_price,
