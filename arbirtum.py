@@ -76,7 +76,11 @@ class Arbitrum:
             await asyncio.sleep(5)
 
     def check_tokens_to_claim(self):
-        return CONTRACT.functions.claimableTokens(self.address).call() / DECIMAL
+        for i in range(5):
+            try:
+                return CONTRACT.functions.claimableTokens(self.address).call() / DECIMAL
+            except:
+                sleep(1)
 
     async def claim(self):
         if self.have_tokens_to_claim:
@@ -135,8 +139,15 @@ class Arbitrum:
             except:
                 log.error(f'Error when sending tx by {self.address}')
 
-    async def wait_tx(self, hash: HexBytes):
-        await web3.eth.wait_for_transaction_receipt(hash, timeout=300)
+    async def wait_tx(self, hash: HexBytes, timeout:300):
+        time_start = time()
+        while True:
+            if time() -timeout > time_start:
+                raise
+            receipt = web3.eth.get_transaction_receipt(hash)
+            if receipt is not None:
+                break
+            await asyncio.sleep(5)
 
     async def get_gas_price(self):
         gas_price = await web3.eth.gas_price
