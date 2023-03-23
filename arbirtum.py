@@ -154,7 +154,7 @@ class Arbitrum:
         while True:
             if time() -timeout > time_start:
                 raise
-            receipt = web3.eth.get_transaction_receipt(hash)
+            receipt = await web3.eth.get_transaction_receipt(hash)
             if receipt is not None:
                 break
             await asyncio.sleep(5)
