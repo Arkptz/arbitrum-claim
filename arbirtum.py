@@ -34,8 +34,10 @@ adresses = asyncio.Queue()
 adresses_lst = []
 with open('transfers.txt', 'r') as file:
     for i in file.read().split('\n'):
-        adresses.put_nowait(i)
-        adresses_lst.append(i)
+        if i != '':
+            i = Web3.to_checksum_address(i)
+            adresses.put_nowait(i)
+            adresses_lst.append(i)
 
 
 class Arbitrum:
@@ -54,7 +56,7 @@ class Arbitrum:
             private_key = mnem_to_addr(seed)[0]
         self.account = Account.from_key(private_key=private_key)
         self.private_key = private_key
-        self.address = self.account.address
+        self.address = Web3.to_checksum_address(self.account.address)
         if CHECK_TOKENS:
             amount = self.check_tokens_to_claim()
 
@@ -140,7 +142,7 @@ class Arbitrum:
             except:
                 log.error(f'Error when sending tx by {self.address}')
 
-    async def wait_tx(self, hash: HexBytes, timeout:300):
+    async def wait_tx(self, hash: HexBytes, timeout:int=300):
         time_start = time()
         while True:
             if time() -timeout > time_start:
