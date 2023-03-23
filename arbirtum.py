@@ -138,7 +138,7 @@ class Arbitrum:
         log.success(f'Transaction complete. Hash - {readable_hash}')
 
     async def send_tx(self, tx: dict) -> HexBytes:
-        for i in range(3):
+        while True:
             try:
                 signed_txn = web3.eth.account.sign_transaction(
                     tx, self.private_key)
